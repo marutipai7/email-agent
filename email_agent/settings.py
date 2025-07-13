@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-ae!vl5xe&s5szba71qe(1qig87036*-^t0_&*(*515ui#zn9^(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['email-agent-bjsy.onrender.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
