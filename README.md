@@ -1,24 +1,31 @@
-# 📧 Email Extractor Agent
+# 📧 Email Contact Extractor with Dashboard (Django + Pydantic)
 
-A Django + Pydantic powered mini AI agent to extract emails from text input, classify them (Personal / Business / Spam), and save them to a user dashboard with export support.
+This is a smart email contact extractor built using **Django**, **Pydantic**, and basic ML logic to classify contacts as personal, business, or spam. Extracted contacts are saved in the database and displayed on a clean dashboard with pagination and CSV export support.
 
-## 🚀 Features
+---
 
-- Extract emails from text
-- Classify type (using simple AI rules)
-- User register/login/logout
-- Dashboard with pagination
-- Export contacts to CSV
-- Admin panel support
+## 🔧 Features
 
-## 🛠️ Tech Stack
+- 🧠 AI-Powered Email Type Classification (Personal, Business, Spam)
+- 📄 Email Extraction from Text Input
+- 🧰 Form-based Upload
+- 🔐 Register/Login/Logout
+- 🗃️ Dashboard to View Contacts
+- 📥 CSV Export
+- 📄 SQLite for local DB
+- 🚀 Deployable to Render
 
-- Python 3.10+
-- Django 5.x
-- Pydantic 2.x
-- SQLite (default) or PostgreSQL
-- Bootstrap (basic styling)
-- Gunicorn + Render for deployment
+---
+
+## 🏗️ Tech Stack
+
+- **Backend:** Django, Pydantic
+- **Frontend:** HTML (Jinja templates)
+- **DB:** SQLite (you can switch to PostgreSQL)
+- **Export:** CSV using `HttpResponse`
+- **Deployment:** Render (free-tier)
+
+---
 
 ## 🧪 Installation
 
