@@ -23,7 +23,7 @@ A Django + Pydantic powered mini AI agent to extract emails from text input, cla
 ## 🧪 Installation
 
 ```bash
-git clone https://github.com/your-username/email-extractor.git
+git clone https://github.com/marutipai7/email-agent.git
 cd email-extractor
 python -m venv env
 source env/bin/activate  # Windows: env\Scripts\activate
