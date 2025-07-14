@@ -1,30 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Email Extractor</title>
-</head>
-<body>
-    <h1>Email Extractor</h1>
+{% extends 'base.html' %}
+{% block title %}Email Extractor{% endblock %}
 
-    {% if user.is_authenticated %}
-        <p>Welcome, {{ user.username }} | <a href="{% url 'logout' %}">Logout</a> | <a href="{% url 'dashboard' %}">Dashboard</a></p>
-    {% endif %}
+{% block content %}
+<h2>Extract Emails from Text</h2>
+<hr>
 
-    <form method="POST">
-        {% csrf_token %}
-        <textarea name="text" rows="10" cols="80" placeholder="Paste your text here..."></textarea><br><br>
-        <button type="submit">Extract Emails</button>
-    </form>
+<form method="POST">
+    {% csrf_token %}
+    <div class="mb-3">
+        <textarea class="form-control" name="text" rows="8" placeholder="Paste your text here..."></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Extract Emails</button>
+</form>
 
-    {% if contacts %}
-        <h2>Extracted Emails:</h2>
-        <ul>
+{% if contacts %}
+    <div class="mt-5">
+        <h4>Extracted Emails:</h4>
+        <ul class="list-group">
             {% for contact in contacts %}
-                <li><strong>Email:</strong> {{ contact.email }} |
-                    <strong>Source:</strong> {{ contact.source }} |
-                    <strong>Type:</strong> {{ contact.contact_type }}</li>
+            <li class="list-group-item">
+                <strong>Email:</strong> {{ contact.email }} |
+                <strong>Source:</strong> {{ contact.source }} |
+                <strong>Type:</strong> {{ contact.contact_type|title }}
+            </li>
             {% endfor %}
         </ul>
-    {% endif %}
-</body>
-</html>
+    </div>
+{% endif %}
+{% endblock %}

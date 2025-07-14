@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+.chat-layout {
+    display: flex;
+    height: 85vh;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #f8f9fa;
+}
+
+.sidebar {
+    width: 260px;
+    background: #ffffff;
+    border-right: 1px solid #dee2e6;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.sidebar h5 {
+    margin-bottom: 16px;
+    font-weight: 600;
+    color: #343a40;
+}
+
+.sidebar ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.sidebar ul li {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.sidebar ul li a {
+    text-decoration: none;
+    color: #212529;
+    display: block;
+}
+
+.sidebar ul li:hover {
+    background-color: #f1f3f5;
+}
+
+.sidebar ul li.active {
+    background-color: #0d6efd;
+}
+
+.sidebar ul li.active a {
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.chat-window {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    background: #e7f0fc;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 8px;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-bubble {
+    max-width: 80%;
+    padding: 12px 16px;
+    margin: 8px;
+    border-radius: 12px;
+    font-size: 16px;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.user-msg {
+    align-self: flex-end;
+    background-color: #d1f4d3;
+    text-align: right;
+}
+
+.bot-msg {
+    align-self: flex-start;
+    background-color: #ffffff;
+    text-align: left;
+    position: relative;
+}
+
+.response-time {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 4px;
+}
+
+.chat-form {
+    display: flex;
+    padding-top: 12px;
+}
+
+.chat-form textarea {
+    flex: 1;
+    resize: none;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+}
+
+.chat-form button {
+    margin-left: 12px;
+    padding: 0 24px;
+    font-size: 16px;
+}
+</style>
+
+<div class="chat-layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <a class="btn btn-outline-primary btn-sm w-100 mb-3" href="{% url 'new_chat' %}">+ New Chat</a>
+        <h5>Chats</h5>
+        <ul>
+            {% for session in sessions %}
+                <li class="{% if session.id == active_session.id %}active{% endif %}">
+                    <a href="{% url 'chat' %}?session={{ session.id }}">
+                        {{ session.created_at|date:"M d, H:i" }}
+                    </a>
+                </li>
+            {% empty %}
+                <li><span class="text-muted">No sessions yet.</span></li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Chat window -->
+    <div class="chat-window">
+        <div class="chat-messages" id="chat-messages">
+            {% for item in chat_history %}
+                <div class="chat-bubble user-msg">🧑 {{ item.query }}</div>
+                <div class="chat-bubble bot-msg">🤖 {{ item.response }}
+                    <div class="response-time">Responded at {{ item.timestamp|date:"H:i:s" }}</div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Chat input -->
+        <form class="chat-form" id="chat-form">
+            {% csrf_token %}
+            <textarea id="query" rows="2" placeholder="Ask me anything..." required></textarea>
+            <button class="btn btn-success" type="submit">Send</button>
+        </form>
+    </div>
+</div>
+
+<!-- Streaming Logic -->
+<script>
+const chatForm = document.getElementById("chat-form");
+const chatBox = document.getElementById("chat-messages");
+const queryInput = document.getElementById("query");
+const sessionId = "{{ active_session.id }}";
+
+chatForm.addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const query = queryInput.value.trim();
+    if (!query) return;
+
+    // Add user message instantly
+    const userBubble = document.createElement("div");
+    userBubble.className = "chat-bubble user-msg";
+    userBubble.innerHTML = `🧑 ${query}`;
+    chatBox.appendChild(userBubble);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    // Bot bubble placeholder
+    const botBubble = document.createElement("div");
+    botBubble.className = "chat-bubble bot-msg";
+    botBubble.innerHTML = "🤖 <span class='stream-text'></span>";
+    const streamSpan = botBubble.querySelector(".stream-text");
+    chatBox.appendChild(botBubble);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    queryInput.value = "";
+    queryInput.disabled = true;
+
+    // Stream from Django SSE endpoint
+    const evtSource = new EventSource(`/chat/stream/?session_id=${sessionId}&query=${encodeURIComponent(query)}`);
+    let startTime = Date.now();
+
+    evtSource.onmessage = function(event) {
+        if (event.data.startsWith("__END__|")) {
+            const elapsed = event.data.split("|")[1];
+            const timeInfo = document.createElement("div");
+            timeInfo.className = "response-time";
+            timeInfo.textContent = `Responded in ${elapsed} seconds`;
+            botBubble.appendChild(timeInfo);
+            queryInput.disabled = false;
+            queryInput.focus();
+            evtSource.close();
+        } else {
+            streamSpan.innerHTML += event.data;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    };
+
+    evtSource.onerror = function() {
+        streamSpan.innerHTML += "\n[Error receiving response]";
+        queryInput.disabled = false;
+        evtSource.close();
+    };
+});
+</script>
+{% endblock %}

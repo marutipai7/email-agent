@@ -1,57 +1,50 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Your Extracted Emails</title>
-</head>
-<body>
-    <h1>Dashboard - Your Extracted Emails</h1>
+{% extends 'base.html' %}
+{% block title %}Dashboard - Extracted Emails{% endblock %}
 
-    <p>
-        Hello, {{ user.username }} |
-        <a href="{% url 'extract_emails' %}">Extract More</a> |
-        <a href="{% url 'logout' %}">Logout</a> |
-        <a href="{% url 'export_contacts' %}">Export as CSV</a>
-    </p>
+{% block content %}
+<h2>Hello, {{ user.username }}</h2>
+<hr>
 
-    {% if page_obj %}
-        {% if page_obj.object_list %}
-            <table border="1" cellpadding="8" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th>Email</th>
-                        <th>Source</th>
-                        <th>Type</th>
-                        <th>Created</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for contact in page_obj %}
-                        <tr>
-                            <td>{{ contact.email }}</td>
-                            <td>{{ contact.source }}</td>
-                            <td>{{ contact.contact_type|title }}</td>
-                            <td>{{ contact.created_at }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+{% if page_obj %}
+    {% if page_obj.object_list %}
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Email</th>
+                    <th>Source</th>
+                    <th>Type</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contact in page_obj %}
+                <tr>
+                    <td>{{ contact.email }}</td>
+                    <td>{{ contact.source }}</td>
+                    <td>{{ contact.contact_type|title }}</td>
+                    <td>{{ contact.created_at }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-            <div style="margin-top: 20px;">
-                {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                {% endif %}
+        <div class="d-flex justify-content-between align-items-center">
+            {% if page_obj.has_previous %}
+                <a class="btn btn-outline-secondary" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            {% else %}
+                <span></span>
+            {% endif %}
 
-                <span style="margin: 0 10px;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            <span class="text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
 
-                {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}">Next</a>
-                {% endif %}
-            </div>
-        {% else %}
-            <p>No contacts extracted yet.</p>
-        {% endif %}
+            {% if page_obj.has_next %}
+                <a class="btn btn-outline-secondary" href="?page={{ page_obj.next_page_number }}">Next</a>
+            {% else %}
+                <span></span>
+            {% endif %}
+        </div>
     {% else %}
-        <p>No contact data available.</p>
+        <div class="alert alert-info mt-4">No contacts extracted yet.</div>
     {% endif %}
-</body>
-</html>
+{% endif %}
+{% endblock %}
