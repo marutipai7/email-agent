@@ -61,9 +61,18 @@ def stream_chat_response(request):
     except ChatSession.DoesNotExist:
         return JsonResponse({'error': 'Invalid session'}, status=404)
 
-    # Scrape + Construct final prompt
-    context_info = scrape_duckduckgo(query)
-    final_input = f"{query}\n\nContext:\n{context_info}"
+    context_info = ""
+    user_message = query.strip()
+
+    # Optional context scraping
+    if len(user_message) > 5 and user_message.lower() not in ["hi", "hello", "hey", "how are you"]:
+        context_info = scrape_duckduckgo(user_message)
+        user_message += f"\n\nContext:\n{context_info}"
+        logger.info(f"📤 Prompt being sent to model: {user_message}")
+
+    # Build prompt
+    if context_info:
+        user_message += f"\n\nContext:\n{context_info}"
 
     model = get_cached_ollama_model()
     start_time = time.time()
@@ -71,19 +80,40 @@ def stream_chat_response(request):
     def event_stream():
         full_response = ""
         try:
-            # Use Ollama's native streaming
-            for chunk in ollama.chat(
-                model="deepseek-r1:1.5b",
-                messages=[{"role": "user", "content": final_input}],
-                stream=True
-            ):
+            response_stream = ollama.chat(
+                model="deepseek-r1:latest",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a helpful assistant. Respond directly and clearly to the user's question "
+                            "as if you are confident and knowledgeable. Do not explain your reasoning process. "
+                            "Avoid phrases like 'Let me think', 'I need to recall', 'The user is asking', 'From what I remember', "
+                            "'Maybe', 'Let me break this down', or any similar expressions. Just respond with the answer in a natural, human tone."
+                        )
+                    },
+                    {"role": "user", "content": user_message}
+                ],
+                stream=True,
+                options={"num_predict": 150}  ## Increase this safely
+            )
+            for chunk in response_stream:
                 text = chunk.get("message", {}).get("content", "")
+                # 🧹 Filter out overthinking/intro phrases
+                if any(phrase in text.lower() for phrase in [
+                    "let's see", "let me", "i need to", "i remember", "the user is asking", "first off", 
+                    "i think", "maybe", "from what i know", "what i recall", "probably", "so i'm trying",
+                    "wait", "now", "hmm", "alright", "so", "breaking it down"
+                ]):
+                    continue
+
                 full_response += text
                 yield f"data: {text}\n\n"
 
+
         except Exception as e:
             logger.exception("Error while streaming Ollama response")
-            yield f"data: [Error receiving response]\n\n"
+            yield f"data: [Error receiving response: {str(e)}]\n\n"
 
         elapsed_time = round(time.time() - start_time, 2)
 
@@ -94,6 +124,7 @@ def stream_chat_response(request):
             query=query,
             response=full_response
         )
+        elapsed_time = round(time.time() - start_time, 2)
         yield f"data:__END__|{elapsed_time}\n\n"
 
     return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
